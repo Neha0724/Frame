@@ -15,27 +15,18 @@ from sklearn.model_selection import train_test_split
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# =========================
-# SPARK
-# =========================
 
+# SPARK
 spark = SparkSession.builder \
     .appName("Anime Rating Prediction") \
     .master("local[*]") \
     .getOrCreate()
 
-
-# =========================
-# LOAD CLEAN DATA
-# =========================
-
+# clean data
 anime = spark.read.parquet(str(ROOT / "output" / "anime_clean"))
 
 
-# =========================
-# PREPARE DATA WITH SPARK
-# =========================
-
+#prepare data with spark
 data = anime \
     .withColumn(
         "episodes_num",
@@ -63,14 +54,9 @@ pandas_data = data.select(
     "rating"
 ).toPandas()
 
-
 print("Training rows:", len(pandas_data))
 
-
-# =========================
-# FEATURES / TARGET
-# =========================
-
+# FEATURES / TARGEt
 X = pandas_data[
     [
         "episodes_num",
@@ -81,11 +67,7 @@ X = pandas_data[
 
 y = pandas_data["rating"]
 
-
-# =========================
-# TRAIN / TEST SPLIT
-# =========================
-
+#spliting
 X_train, X_test, y_train, y_test = train_test_split(
     X,
     y,
@@ -93,15 +75,11 @@ X_train, X_test, y_train, y_test = train_test_split(
     random_state=42
 )
 
-
 print("Training:", len(X_train))
 print("Testing:", len(X_test))
 
 
-# =========================
-# PREPROCESSING
-# =========================
-
+# preprocessing
 preprocessor = ColumnTransformer(
     transformers=[
         (
@@ -116,10 +94,7 @@ preprocessor = ColumnTransformer(
 )
 
 
-# =========================
 # RANDOM FOREST
-# =========================
-
 rf = RandomForestRegressor(
     n_estimators=100,
     random_state=42,
@@ -133,22 +108,12 @@ pipeline = Pipeline(
         ("model", rf)
     ]
 )
-
-
-# =========================
-# TRAIN
-# =========================
-
+#train model
 pipeline.fit(
     X_train,
     y_train
 )
-
-
-# =========================
-# EVALUATION
-# =========================
-
+#evaluate model
 predictions = pipeline.predict(X_test)
 
 rmse = mean_squared_error(
@@ -158,11 +123,7 @@ rmse = mean_squared_error(
 
 print("RMSE:", rmse)
 
-
-# =========================
-# SAVE MODEL
-# =========================
-
+#save model
 os.makedirs(
     str(ROOT / "models"),
     exist_ok=True
